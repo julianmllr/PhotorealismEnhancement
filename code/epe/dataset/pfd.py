@@ -21,8 +21,10 @@ def center(x, m, s):
 def material_from_gt_label(gt_labelmap):
 	""" Merges several classes. """
 
+	# h,w,_ = gt_labelmap.shape
 	h,w = gt_labelmap.shape
 	shader_map = np.zeros((h, w, 12), dtype=np.float32)
+	# print(gt_labelmap)
 	shader_map[:,:,0] = (gt_labelmap == 23).astype(np.float32) # sky
 	shader_map[:,:,1] = (np.isin(gt_labelmap, [6, 7, 8, 9, 10])).astype(np.float32) # road / static / sidewalk
 	shader_map[:,:,2] = (np.isin(gt_labelmap, [26,27,28,29,30,31,32,33])).astype(np.float32) # vehicle
@@ -39,7 +41,7 @@ def material_from_gt_label(gt_labelmap):
 
 
 class PfDDataset(SyntheticDataset):
-	def __init__(self, paths, transform=None, gbuffers='fake'):
+	def __init__(self, paths, transform=None, gbuffers='lite'):
 		"""
 
 
@@ -48,7 +50,7 @@ class PfDDataset(SyntheticDataset):
 
 		super(PfDDataset, self).__init__('GTA')
 
-		assert gbuffers in ['all', 'img', 'no_light', 'geometry', 'fake']
+		assert gbuffers in ['all', 'img', 'no_light', 'geometry', 'fake', 'lite']
 
 		self.transform = transform
 		self.gbuffers  = gbuffers
@@ -85,13 +87,13 @@ class PfDDataset(SyntheticDataset):
 	@property
 	def num_gbuffer_channels(self):
 		""" Number of image channels the provided G-buffers contain."""
-		return {'fake':32, 'all':26, 'img':0, 'no_light':17, 'geometry':8}[self.gbuffers]
+		return {'fake':32, 'all':26, 'img':0, 'no_light':17, 'geometry':8, 'lite':3}[self.gbuffers]
 
 
 	@property
 	def num_classes(self):
 		""" Number of classes in the semantic segmentation maps."""
-		return {'fake':12, 'all':12, 'img':0, 'no_light':0, 'geometry':0}[self.gbuffers]
+		return {'fake':12, 'all':12, 'img':0, 'no_light':0, 'geometry':0, 'lite':12}[self.gbuffers]
 
 
 	@property
@@ -120,10 +122,13 @@ class PfDDataset(SyntheticDataset):
 
 		data = np.load(gbuffer_path)
 
-		if self.gbuffers == 'fake':
+		if self.gbuffers == 'fake' or self.gbuffers == 'lite' or self.gbuffers == 'img':
 			img       = mat2tensor(imageio.imread(img_path).astype(np.float32) / 255.0)
 			gbuffers  = mat2tensor(data['data'].astype(np.float32))
-			gt_labels = material_from_gt_label(imageio.imread(gt_label_path))
+			# print(gt_label_path, flush=True)
+			imageee = imageio.imread(gt_label_path)
+			# print(imageee.shape, flush=True)
+			gt_labels = material_from_gt_label(imageee)
 			if gt_labels.shape[0] != img.shape[-2] or gt_labels.shape[1] != img.shape[-1]:
 				gt_labels = resize(gt_labels, (img.shape[-2], img.shape[-1]), anti_aliasing=True, mode='constant')
 			gt_labels = mat2tensor(gt_labels)
@@ -150,6 +155,7 @@ class PfDDataset(SyntheticDataset):
 		robust_labels = imageio.imread(robust_label_path)
 		robust_labels = torch.LongTensor(robust_labels[:,:]).unsqueeze(0)
 
+		# print(gt_labels[:,:,1])
 		return EPEBatch(img, gbuffers=gbuffers, gt_labels=gt_labels, robust_labels=robust_labels, path=img_path, coords=None)
 
 

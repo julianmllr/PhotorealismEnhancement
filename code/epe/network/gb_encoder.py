@@ -137,13 +137,18 @@ class GBufferEncoder(nn.Module):
 			features += classmap[:,c,:,:] * self.class_encoders[c](\
 				self.cls2gbuf[c](gbuffers) if c in self.cls2gbuf else gbuffers)
 			pass
-
+		
+		# self._log.debug(features)
+		# self._log.debug(features.shape)
 		features = [features]
 		for layer in self.joint_encoder_layers:
 			features.append(layer(features[-1]))
 			pass
 
+		# self._log.debug(len(features))
+		# self._log.debug(features[1].shape)
 		return features[1:]
+		# return [torch.empty((1, 0, 196, 196)), torch.empty((1, 0, 98, 98)), torch.empty((1, 0, 49, 49)), torch.empty((1, 0, 25, 25))]
 
 
 base_norm_factory = {

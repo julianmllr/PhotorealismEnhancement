@@ -481,6 +481,7 @@ class HighResolutionNet(nn.Module):
 
 		x = epe_batch.img
 		g = epe_batch.gbuffers
+		# g = torch.empty((1, 0, 196, 196))
 		s = epe_batch.gt_labels
 		del epe_batch
 
@@ -507,9 +508,9 @@ class HighResolutionNet(nn.Module):
 
 		if self._log.isEnabledFor(logging.DEBUG) and self._encoder_type not in [GBufferEncoderType.CONCAT]:
 			self._log.debug(f'  Encoded G-buffers for {len(g_list)} branches:')
-			for i,gi in enumerate(g_list):
-				self._log.debug(f'  {i}: {gi.shape}')
-				pass				
+			# for i,gi in enumerate(g_list):
+			# 	self._log.debug(f'  {i}: {gi.shape}')
+			# 	pass				
 			pass
 
 		x   = self.stem(x)
